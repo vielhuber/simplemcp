@@ -1,6 +1,6 @@
 {
     "name": "vielhuber/simplemcp",
-    "description": "Slim PHP HTTP MCP server with auto-discovery, bearer token and TOTP auth",
+    "description": "Simple php mcp server with auto-discovery and totp auth.",
     "license": "MIT",
     "require": {
         "php": ">=8.3",

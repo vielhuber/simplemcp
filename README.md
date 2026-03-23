@@ -1,4 +1,4 @@
-# 🔌 simplemcp 🔌
+# 🐘 simplemcp 🐘
 
 simplemcp is a slim php http mcp server. it auto-discovers tool classes via reflection, loads them from a directory you point it at, and authenticates requests via a static bearer token or rotating totp codes (rfc 6238).
 
