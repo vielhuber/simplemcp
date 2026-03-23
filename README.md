@@ -24,7 +24,7 @@ Authorization: Bearer <MCP_TOKEN>
 
 **`totp`**
 
-`MCP_TOKEN` is a base32-encoded shared secret (rfc 6238). the bearer is a fresh 6-digit totp code (30-second window, ±1 step tolerance). the server implements the algorithm natively — no extra library needed. on the client (python/fastmcp):
+`MCP_TOKEN` is a base32-encoded shared secret (rfc 6238). the bearer is a fresh 6-digit totp code (30-second window, ±1 step tolerance). the server implements the algorithm natively, no extra library needed. on the client (python/fastmcp):
 
 ```python
 import pyotp
@@ -101,7 +101,7 @@ class MyTools
 }
 ```
 
-**stdio mode** (local, via php cli — no auth needed)
+**stdio mode** (local, via php cli, no auth needed)
 
 ```json
 {
