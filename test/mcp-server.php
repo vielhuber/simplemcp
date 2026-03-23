@@ -6,7 +6,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use vielhuber\simplemcp\simplemcp;
 
 new simplemcp(
-    name: 'test-mcp-server',
+    name: 'my-mcp-server',
     log: 'mcp-server.log',
     discovery: '.',
     auth: 'static',

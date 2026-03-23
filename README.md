@@ -20,24 +20,19 @@ python3 -c "import pyotp; print('MCP_TOKEN=' + pyotp.random_base32())" > .env
 
 the auth mode is set in the `simplemcp` constructor via `auth`:
 
-**mode `static` (default)**
-
-`MCP_TOKEN` is sent as-is as a bearer token on every request:
+**`static`**
 
 ```
 Authorization: Bearer <MCP_TOKEN>
 ```
 
-**mode `totp`**
+**`totp`**
 
-`MCP_TOKEN` is a base32-encoded shared secret (rfc 6238). the bearer is a fresh 6-digit totp code (30-second window, ±1 step tolerance). the server implements the algorithm natively — no extra library needed.
-
-on the client (python/fastmcp):
+`MCP_TOKEN` is a base32-encoded shared secret (rfc 6238). the bearer is a fresh 6-digit totp code (30-second window, ±1 step tolerance). the server implements the algorithm natively — no extra library needed. on the client (python/fastmcp):
 
 ```python
 import pyotp
-
-token = pyotp.TOTP("YOUR_MCP_TOKEN").now()
+token = pyotp.TOTP("MCP_TOKEN").now()
 # send as: Authorization: Bearer <token>
 ```
 
@@ -51,8 +46,8 @@ use vielhuber\simplemcp\simplemcp;
 new simplemcp(
     name: 'my-mcp-server',
     log: 'mcp-server.log',
-    discovery: 'tools',
-    auth: 'static', // 'static' or 'totp'
+    discovery: '.',
+    auth: 'static', // 'static'|'totp'
     env: '.env'
 );
 ```
@@ -127,10 +122,6 @@ the server scans `discoveryDir` recursively, instantiates every class that has a
 }
 ```
 
-## logging
-
-requests, auth failures, and errors are appended to `mcp-server.log`. set `log: ''` to disable logging.
-
 ## apache configuration
 
 add the following to your `.htaccess` to ensure the `Authorization` header is forwarded to php:
@@ -142,7 +133,3 @@ CGIPassAuth On
 RewriteCond %{HTTP:Authorization} ^(.*)
 RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
 ```
-
-adjust the socket path to match your php-fpm version.
-
-**note:** if your vhost routes `Accept: text/event-stream` requests to a dedicated streaming fpm handler (e.g. `flushpackets=on`, `enablereuse=on`), exclude `mcp-server.php` from that routing — simplemcp always responds with plain json, not sse. add `&& %{REQUEST_URI} !~ /mcp-server\.php$/` to your streaming `<If>` condition.
