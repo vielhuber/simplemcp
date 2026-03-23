@@ -32,6 +32,20 @@ class simplemcp
         $dotenv = \Dotenv\Dotenv::createImmutable(dirname($this->env), basename($this->env));
         $dotenv->load();
 
+        $this->tools = $this->discoverTools();
+        $this->instanceMap = $this->buildInstanceMap();
+
+        if (php_sapi_name() === 'cli') {
+            $this->handleStdio();
+        } else {
+            $this->handleHttp();
+        }
+    }
+
+    // --- Transport: HTTP ---
+
+    private function handleHttp(): void
+    {
         header('Content-Type: application/json');
         header('Access-Control-Allow-Origin: *');
         header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -71,9 +85,6 @@ class simplemcp
                 exit();
             }
 
-            $this->tools = $this->discoverTools();
-            $this->instanceMap = $this->buildInstanceMap();
-
             echo json_encode($this->dispatch($id, $method, $params), JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
             $this->log('error', 'JSON encoding error: ' . $e->getMessage());
@@ -83,6 +94,40 @@ class simplemcp
             $this->log('error', $e->getMessage());
             http_response_code(500);
             echo '{"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"Internal error"}}';
+        }
+    }
+
+    // --- Transport: stdio (newline-delimited JSON-RPC) ---
+
+    private function handleStdio(): void
+    {
+        while (($line = fgets(STDIN)) !== false) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            try {
+                $request = json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+                $isNotification = !array_key_exists('id', $request);
+
+                // JSON-RPC notifications (e.g. "initialized") need no response
+                if ($isNotification) {
+                    continue;
+                }
+
+                $id = $request['id'] ?? null;
+                $method = $request['method'] ?? '';
+                $params = is_array($request['params'] ?? []) ? $request['params'] ?? [] : [];
+
+                $response = json_encode($this->dispatch($id, $method, $params), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                fwrite(STDOUT, $response . "\n");
+            } catch (\JsonException $e) {
+                $this->log('error', 'stdio JSON error: ' . $e->getMessage());
+                fwrite(STDOUT, '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"Parse error"}}' . "\n");
+            } catch (\Throwable $e) {
+                $this->log('error', $e->getMessage());
+                fwrite(STDOUT, '{"jsonrpc":"2.0","id":null,"error":{"code":-32603,"message":"Internal error"}}' . "\n");
+            }
         }
     }
 

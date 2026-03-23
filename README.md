@@ -1,6 +1,6 @@
 # 🐘 simplemcp 🐘
 
-simplemcp is a slim php http mcp server. it auto-discovers tool classes via reflection, loads them from a directory you point it at, and authenticates requests via a static bearer token or rotating totp codes (rfc 6238).
+simplemcp is a simple php mcp server. it auto-discovers tool classes via reflection, loads them from a directory you point it at, and authenticates requests via a static bearer token or rotating totp codes (rfc 6238).
 
 ## installation
 
@@ -10,15 +10,11 @@ composer require vielhuber/simplemcp
 
 ## configuration
 
-generate a token and write it directly to `.env` (works for both modes):
-
 ```sh
 python3 -c "import pyotp; print('MCP_TOKEN=' + pyotp.random_base32())" > .env
 ```
 
 ## authentication
-
-the auth mode is set in the `simplemcp` constructor via `auth`:
 
 **`static`**
 
@@ -56,8 +52,6 @@ new simplemcp(
 
 > **note:** simplemcp uses the same `#[McpTool]` and `#[Schema]` attribute syntax as [`php-mcp/server`](https://github.com/php-mcp/server). existing tool classes can be migrated by replacing `use PhpMcp\Server\Attributes\McpTool;` with `use vielhuber\simplemcp\Attributes\McpTool;` (and the same for `Schema`).
 
-annotate any public method with `#[McpTool]` and drop the class file into your `discoveryDir`:
-
 ```php
 use vielhuber\simplemcp\Attributes\McpTool;
 use vielhuber\simplemcp\Attributes\Schema;
@@ -90,8 +84,6 @@ class MyTools
 }
 ```
 
-the server scans `discoveryDir` recursively, instantiates every class that has at least one `#[McpTool]` method, and registers its tools automatically. tool names default to `snake_case` of the method name when no `name` is provided. parameter types are inferred from php type hints and can be overridden via `#[Schema]`.
-
 ## mcp server
 
 **http mode** (recommended for remote servers)
@@ -109,7 +101,7 @@ the server scans `discoveryDir` recursively, instantiates every class that has a
 }
 ```
 
-**stdio mode** (local, via php cli)
+**stdio mode** (local, via php cli — no auth needed)
 
 ```json
 {
