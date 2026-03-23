@@ -1,0 +1,14 @@
+{
+    "name": "vielhuber/simplemcp",
+    "description": "Slim PHP HTTP MCP server with auto-discovery, bearer token and TOTP auth",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.3",
+        "vlucas/phpdotenv": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "vielhuber\\simplemcp\\": "src/"
+        }
+    }
+}
