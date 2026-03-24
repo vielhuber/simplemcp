@@ -119,12 +119,16 @@ class MyTools
 
 ## apache configuration
 
-add the following to your `.htaccess` to ensure the `Authorization` header is forwarded to php:
-
 ```apache
+# forward Authorization header
 RewriteEngine on
 RewriteBase /
 CGIPassAuth On
 RewriteCond %{HTTP:Authorization} ^(.*)
 RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+
+# block public access to .env
+<Files ".env">
+    Require all denied
+</Files>
 ```
