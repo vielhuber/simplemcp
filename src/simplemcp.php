@@ -263,10 +263,15 @@ class simplemcp
     private function discoverTools(): array
     {
         if ($this->discovery !== '' && is_dir($this->discovery)) {
-            $before = get_declared_classes();
             $this->autoloadDir($this->discovery);
-            foreach (array_diff(get_declared_classes(), $before) as $class) {
+            $realDiscovery = realpath($this->discovery);
+            foreach (get_declared_classes() as $class) {
                 $ref = new \ReflectionClass($class);
+                // only consider classes whose file is inside the discovery directory
+                $file = $ref->getFileName();
+                if ($file === false || !str_starts_with(realpath($file) ?: '', $realDiscovery)) {
+                    continue;
+                }
                 if ($ref->isAbstract() || $ref->isInterface() || $ref->isTrait()) {
                     continue;
                 }
