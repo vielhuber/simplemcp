@@ -11,25 +11,28 @@ composer require vielhuber/simplemcp
 ## configuration
 
 ```sh
-python3 -c "import pyotp; print('MCP_TOKEN=' + pyotp.random_base32())" > .env
+php -r '$b="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";$r=random_bytes(20);$bits="";for($i=0;$i<20;$i++){$bits.=str_pad(decbin(ord($r[$i])),8,"0",STR_PAD_LEFT);}$s="";for($i=0;$i+5<=strlen($bits);$i+=5){$s.=$b[bindec(substr($bits,$i,5))];}echo "MCP_TOKEN=".$s.PHP_EOL;' > .env
 ```
 
 ## authentication
 
-**`static`**
+### `static` mode
 
 ```
 Authorization: Bearer <MCP_TOKEN>
 ```
 
-**`totp`**
+### `totp` mode
 
 `MCP_TOKEN` is a base32-encoded shared secret (rfc 6238). the bearer is a fresh 6-digit totp code (30-second window, ±1 step tolerance). the server implements the algorithm natively, no extra library needed. on the client (python/fastmcp):
 
-```python
-import pyotp
-token = pyotp.TOTP("MCP_TOKEN").now()
-# send as: Authorization: Bearer <token>
+```php
+$authorization_token = (static fn($h) => (static fn($o) => str_pad(((ord($h[$o]) & 0x7f) << 24 | (ord($h[$o+1]) & 0xff) << 16 | (ord($h[$o+2]) & 0xff) << 8 | ord($h[$o+3]) & 0xff) % 1_000_000, 6, '0', STR_PAD_LEFT))(ord($h[19]) & 0xf))(
+    (static fn($key) => hash_hmac('sha1', pack('N*', 0) . pack('N*', (int) floor(time() / 30)), $key, true))(
+        (static fn($bits) => implode('', array_map(fn($i) => chr(bindec(substr($bits, $i, 8))), range(0, strlen($bits) - 8, 8))))(
+            implode('', array_map(fn($c) => str_pad(decbin(strpos('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567', $c)), 5, '0', STR_PAD_LEFT), str_split(strtoupper($_ENV['MCP_TOKEN']))))
+        )
+    ));
 ```
 
 ## usage

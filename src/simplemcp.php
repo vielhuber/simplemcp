@@ -25,9 +25,15 @@ class simplemcp
     ) {
         // resolve relative paths against the calling script's directory
         $callerDir = dirname(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0]['file']);
-        if (!str_starts_with($this->log, '/'))       { $this->log       = $callerDir . '/' . $this->log; }
-        if (!str_starts_with($this->discovery, '/')) { $this->discovery = $callerDir . '/' . $this->discovery; }
-        if (!str_starts_with($this->env, '/'))       { $this->env       = $callerDir . '/' . $this->env; }
+        if (!str_starts_with($this->log, '/')) {
+            $this->log = $callerDir . '/' . $this->log;
+        }
+        if (!str_starts_with($this->discovery, '/')) {
+            $this->discovery = $callerDir . '/' . $this->discovery;
+        }
+        if (!str_starts_with($this->env, '/')) {
+            $this->env = $callerDir . '/' . $this->env;
+        }
 
         $dotenv = \Dotenv\Dotenv::createImmutable(dirname($this->env), basename($this->env));
         $dotenv->load();
@@ -119,7 +125,10 @@ class simplemcp
                 $method = $request['method'] ?? '';
                 $params = is_array($request['params'] ?? []) ? $request['params'] ?? [] : [];
 
-                $response = json_encode($this->dispatch($id, $method, $params), JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+                $response = json_encode(
+                    $this->dispatch($id, $method, $params),
+                    JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE
+                );
                 fwrite(STDOUT, $response . "\n");
             } catch (\JsonException $e) {
                 $this->log('error', 'stdio JSON error: ' . $e->getMessage());
@@ -177,16 +186,16 @@ class simplemcp
      */
     private function computeTotp(string $base32Secret, int $counter): string
     {
-        $key  = $this->base32Decode($base32Secret);
+        $key = $this->base32Decode($base32Secret);
         $data = pack('J', $counter);
         $hash = hash_hmac('sha1', $data, $key, true);
         $offset = ord($hash[19]) & 0x0f;
-        $code = (
-            ((ord($hash[$offset])     & 0x7f) << 24) |
-            ((ord($hash[$offset + 1]) & 0xff) << 16) |
-            ((ord($hash[$offset + 2]) & 0xff) << 8)  |
-             (ord($hash[$offset + 3]) & 0xff)
-        ) % 1_000_000;
+        $code =
+            (((ord($hash[$offset]) & 0x7f) << 24) |
+                ((ord($hash[$offset + 1]) & 0xff) << 16) |
+                ((ord($hash[$offset + 2]) & 0xff) << 8) |
+                (ord($hash[$offset + 3]) & 0xff)) %
+            1_000_000;
         return str_pad((string) $code, 6, '0', STR_PAD_LEFT);
     }
 
@@ -196,20 +205,20 @@ class simplemcp
     private function base32Decode(string $input): string
     {
         $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-        $input    = strtoupper(rtrim($input, '='));
-        $buffer   = 0;
+        $input = strtoupper(rtrim($input, '='));
+        $buffer = 0;
         $bitsLeft = 0;
-        $result   = '';
+        $result = '';
         foreach (str_split($input) as $char) {
             $pos = strpos($alphabet, $char);
             if ($pos === false) {
                 continue;
             }
-            $buffer    = ($buffer << 5) | $pos;
+            $buffer = ($buffer << 5) | $pos;
             $bitsLeft += 5;
             if ($bitsLeft >= 8) {
                 $bitsLeft -= 8;
-                $result   .= chr(($buffer >> $bitsLeft) & 0xff);
+                $result .= chr(($buffer >> $bitsLeft) & 0xff);
             }
         }
         return $result;
@@ -294,9 +303,15 @@ class simplemcp
     private function autoloadDir(string $dir): void
     {
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir)) as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                require_once $file->getPathname();
+            if (!$file->isFile() || $file->getExtension() !== 'php') {
+                continue;
             }
+            // only include files that actually contain McpTool annotations to avoid
+            // executing side effects (e.g. bootstrap code) in unrelated application files
+            if (!str_contains(file_get_contents($file->getPathname()), 'McpTool')) {
+                continue;
+            }
+            require_once $file->getPathname();
         }
     }
 
@@ -392,7 +407,7 @@ class simplemcp
                 'uniqueItems',
                 'properties',
                 'required',
-                'additionalProperties',
+                'additionalProperties'
             ]
             as $key
         ) {
