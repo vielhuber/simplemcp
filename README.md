@@ -1,3 +1,10 @@
+[![GitHub Tag](https://img.shields.io/github/v/tag/vielhuber/simplemcp)](https://github.com/vielhuber/simplemcp/tags)
+[![Code Style](https://img.shields.io/badge/code_style-psr--12-ff69b4.svg)](https://www.php-fig.org/psr/psr-12/)
+[![License](https://img.shields.io/github/license/vielhuber/simplemcp)](https://github.com/vielhuber/simplemcp/blob/main/LICENSE.md)
+[![Last Commit](https://img.shields.io/github/last-commit/vielhuber/simplemcp)](https://github.com/vielhuber/simplemcp/commits)
+[![PHP Version Support](https://img.shields.io/packagist/php-v/vielhuber/simplemcp)](https://packagist.org/packages/vielhuber/simplemcp)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/vielhuber/simplemcp)](https://packagist.org/packages/vielhuber/simplemcp)
+
 # 🐘 simplemcp 🐘
 
 simplemcp is a simple php mcp server. it auto-discovers tool classes via reflection, loads them from a directory you point it at, and authenticates requests via a static bearer token or rotating totp codes (rfc 6238).
