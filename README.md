@@ -91,8 +91,33 @@ class MyTools
     ): string {
         return "Hello, {$name}!";
     }
+
+    /**
+     * Finds a user by their ID.
+     *
+     * @param int $user_id The unique ID of the user.
+     *
+     * @return array{id: int, name: string, email: string} The user data.
+     *
+     * @throws \RuntimeException If the user ID is invalid or the user does not exist.
+     *
+     */
+    #[McpTool(name: 'get_user')]
+    public function getUser(int $user_id): array
+    {
+        if ($user_id <= 0) {
+            throw new \RuntimeException('User ID must be a positive integer.');
+        }
+        $user = db_fetch_row('SELECT * FROM users WHERE ID = ?', $user_id);
+        if ($user === null) {
+            throw new \RuntimeException(sprintf('User with ID %d does not exist.', $user_id));
+        }
+        return ['id' => $user->ID, 'name' => $user->name, 'email' => $user->email];
+    }
 }
 ```
+
+> **note:** throw `\RuntimeException` (or any `\Throwable`) to signal errors. simplemcp catches these automatically and returns them as a structured mcp error response with `isError: true` and the exception message as `text`. this is the recommended pattern for invalid input or missing resources — do not return `null` or `false`.
 
 ## mcp server
 
