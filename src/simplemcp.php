@@ -382,7 +382,17 @@ class simplemcp
             if ($schemaAttr->definition !== null) {
                 return $schemaAttr->definition;
             }
-            return $this->buildFromSchemaAttr($schemaAttr);
+            $schema = $this->buildFromSchemaAttr($schemaAttr);
+            if (!isset($schema['type'])) {
+                $type = $param->getType();
+                if ($type !== null) {
+                    $typeSchema = $this->buildTypeSchema($type);
+                    if (isset($typeSchema['type'])) {
+                        $schema['type'] = $typeSchema['type'];
+                    }
+                }
+            }
+            return $schema;
         }
         $type = $param->getType();
         return $type !== null ? $this->buildTypeSchema($type) : ['type' => 'string'];
