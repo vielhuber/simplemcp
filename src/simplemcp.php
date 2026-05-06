@@ -559,6 +559,15 @@ class simplemcp
         return implode("\n", $lines);
     }
 
+    /**
+     * Extract per-parameter @param descriptions from a docblock. Returns a
+     * map of paramName → description. Multi-line @param entries (where the
+     * description continues on the next indented line) are joined with a
+     * single space. The type pattern is lazy (.+?) so generic phpdoc types
+     * containing whitespace (e.g. "array<array<string, string>>") match
+     * correctly — a strict \S+ would stop at the first space inside the
+     * type and miss the parameter name entirely.
+     */
     private function parseDocParams(string $docblock): array
     {
         $result = [];
@@ -566,7 +575,7 @@ class simplemcp
         foreach (explode("\n", $docblock) as $rawLine) {
             $line = trim($rawLine, " \t");
             $line = preg_replace('/^\/?\*+\/?\s?/', '', $line) ?? '';
-            if (preg_match('/^@param\s+\S+\s+\$([A-Za-z_][A-Za-z0-9_]*)\s*(.*)$/', $line, $m)) {
+            if (preg_match('/^@param\s+.+?\s+\$([A-Za-z_][A-Za-z0-9_]*)\s*(.*)$/', $line, $m)) {
                 $current = $m[1];
                 $result[$current] = trim($m[2]);
                 continue;
