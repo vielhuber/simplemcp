@@ -295,7 +295,8 @@ class simplemcp
                 $toolAttr = $attrs[0]->newInstance();
                 $tools[] = [
                     'name' => $toolAttr->name ?? $this->camelToSnake($method->getName()),
-                    'description' => $toolAttr->description ?? $this->parseDocSummary($method->getDocComment() ?: ''),
+                    'description' =>
+                        $toolAttr->description ?? $this->parseDocDescription($method->getDocComment() ?: ''),
                     'inputSchema' => $this->buildMethodSchema($method),
                     '_class' => get_class($instance),
                     '_method' => $method->getName()
@@ -341,10 +342,16 @@ class simplemcp
             return $methodAttr->definition;
         }
 
+        $paramDocs = $this->parseDocParams($method->getDocComment() ?: '');
+
         $properties = [];
         $required = [];
         foreach ($method->getParameters() as $param) {
-            $properties[$param->getName()] = $this->buildParamSchema($param);
+            $schema = $this->buildParamSchema($param);
+            if (!isset($schema['description']) && isset($paramDocs[$param->getName()])) {
+                $schema['description'] = $paramDocs[$param->getName()];
+            }
+            $properties[$param->getName()] = $schema;
             if (!$param->isOptional()) {
                 $required[] = $param->getName();
             }
@@ -526,6 +533,54 @@ class simplemcp
             }
         }
         return '';
+    }
+
+    private function parseDocDescription(string $docblock): string
+    {
+        $lines = [];
+        foreach (explode("\n", $docblock) as $line) {
+            $line = trim($line, " \t");
+            // drop the docblock framing characters at the start of each
+            // line: "/**", " *", " */"
+            $line = preg_replace('/^\/?\*+\/?\s?/', '', $line) ?? '';
+            if (str_starts_with($line, '@')) {
+                break;
+            }
+            $lines[] = $line;
+        }
+        // trim leading and trailing empty lines without collapsing
+        // intentional blank lines between paragraphs
+        while (count($lines) > 0 && trim($lines[0]) === '') {
+            array_shift($lines);
+        }
+        while (count($lines) > 0 && trim(end($lines)) === '') {
+            array_pop($lines);
+        }
+        return implode("\n", $lines);
+    }
+
+    private function parseDocParams(string $docblock): array
+    {
+        $result = [];
+        $current = null; // name of the @param currently being accumulated
+        foreach (explode("\n", $docblock) as $rawLine) {
+            $line = trim($rawLine, " \t");
+            $line = preg_replace('/^\/?\*+\/?\s?/', '', $line) ?? '';
+            if (preg_match('/^@param\s+\S+\s+\$([A-Za-z_][A-Za-z0-9_]*)\s*(.*)$/', $line, $m)) {
+                $current = $m[1];
+                $result[$current] = trim($m[2]);
+                continue;
+            }
+            if (str_starts_with($line, '@')) {
+                $current = null;
+                continue;
+            }
+            // continuation line of the most recent @param
+            if ($current !== null && trim($line) !== '') {
+                $result[$current] = trim($result[$current] . ' ' . trim($line));
+            }
+        }
+        return $result;
     }
 
     private function camelToSnake(string $name): string
