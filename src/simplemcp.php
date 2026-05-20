@@ -512,7 +512,23 @@ class simplemcp
         foreach ($method->getParameters() as $param) {
             $name = $param->getName();
             if (array_key_exists($name, $arguments)) {
-                $args[] = $arguments[$name];
+                $value = $arguments[$name];
+                // LLMs frequently supply "" instead of omitting an optional
+                // string arg. For nullable string params that's almost never
+                // the caller's intent — treat "" as "not provided" and fall
+                // back to the default (or null) so downstream `!== null`
+                // checks behave as expected.
+                $value__type = $param->getType();
+                if (
+                    $value === '' &&
+                    $value__type instanceof \ReflectionNamedType &&
+                    $value__type->getName() === 'string' &&
+                    $value__type->allowsNull()
+                ) {
+                    $args[] = $param->isDefaultValueAvailable() ? $param->getDefaultValue() : null;
+                } else {
+                    $args[] = $value;
+                }
             } elseif ($param->isDefaultValueAvailable()) {
                 $args[] = $param->getDefaultValue();
             } else {
